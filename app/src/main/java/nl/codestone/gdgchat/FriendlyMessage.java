@@ -20,6 +20,7 @@ public class FriendlyMessage {
     private String text;
     private String name;
     private String photoUrl;
+    private String key;
 
     public FriendlyMessage() {
     }
@@ -52,5 +53,29 @@ public class FriendlyMessage {
 
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        FriendlyMessage that = (FriendlyMessage) o;
+
+        return key != null ? key.equals(that.key) : that.key == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return key != null ? key.hashCode() : 0;
     }
 }

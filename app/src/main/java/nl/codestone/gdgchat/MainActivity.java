@@ -285,11 +285,29 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
+                    friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.add(friendlyMessage);
                 }
 
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
-                public void onChildRemoved(DataSnapshot dataSnapshot) {}
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    FriendlyMessage newMessage = dataSnapshot.getValue(FriendlyMessage.class);
+                    newMessage.setKey(dataSnapshot.getKey());
+                    final int oldPosition = mMessageAdapter.getPosition(newMessage);
+                    if (oldPosition >= 0 && oldPosition < mMessageAdapter.getCount()) {
+                        FriendlyMessage existingMessage = mMessageAdapter.getItem(oldPosition);
+                        if (existingMessage != null) {
+                            existingMessage.setName(newMessage.getName());
+                            existingMessage.setPhotoUrl(newMessage.getPhotoUrl());
+                            existingMessage.setText(newMessage.getText());
+                            mMessageAdapter.notifyDataSetChanged();
+                        }
+                    }
+                }
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
+                    friendlyMessage.setKey(dataSnapshot.getKey());
+                    mMessageAdapter.remove(friendlyMessage);
+                }
                 public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
                 public void onCancelled(DatabaseError databaseError) {}
             };
