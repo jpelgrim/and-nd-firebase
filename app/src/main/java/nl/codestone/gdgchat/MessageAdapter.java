@@ -1,4 +1,4 @@
-package com.google.firebase.udacity.friendlychat;
+package nl.codestone.gdgchat;
 
 import android.app.Activity;
 import android.content.Context;

@@ -9,14 +9,22 @@ repositories {
 
 android {
     compileSdkVersion 24
-    buildToolsVersion "24.0.1"
+    buildToolsVersion "24.0.3"
 
     defaultConfig {
-        applicationId "com.google.firebase.udacity.friendlychat"
+        applicationId "nl.codestone.gdgchat"
         minSdkVersion 16
         targetSdkVersion 24
         versionCode 1
         versionName "1.0"
+    }
+    signingConfigs {
+        release {
+            storeFile file(codestoneKeyStore)
+            storePassword codestoneKeyStorePassword
+            keyAlias codestoneKeyAlias
+            keyPassword codestoneKeyAliasPassword
+        }
     }
     buildTypes {
         release {
