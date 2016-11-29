@@ -16,6 +16,7 @@
 package nl.codestone.gdgchat;
 
 import android.content.Intent;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -62,10 +63,15 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String ANONYMOUS = "anonymous";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 1000;
+    public static final boolean DEFAULT_SOUND_ON = false;
     public static final String FRIENDLY_MSG_LENGTH_KEY = "friendly_msg_length";
+    public static final String SOUND_ON_KEY = "sound_on";
 
     public static final int RC_SIGN_IN = 1;
     private static final int RC_PHOTO_PICKER = 2;
+
+    private MediaPlayer mSendMP;
+    private MediaPlayer mReceiveMP;
 
     private ListView mMessageListView;
     private MessageAdapter mMessageAdapter;
@@ -85,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mChatPhotosStorageReference;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
+    private boolean mSoundOn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +99,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mUsername = ANONYMOUS;
+        mSoundOn = false;
+
+        mSendMP = MediaPlayer.create(this, R.raw.send);
+        mReceiveMP = MediaPlayer.create(this, R.raw.receive);
 
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseDatabase.getInstance();
@@ -153,6 +164,9 @@ public class MainActivity extends AppCompatActivity {
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (mSoundOn) {
+                    mSendMP.start();
+                }
                 FriendlyMessage friendlyMessage = new FriendlyMessage(mMessageEditText.getText().toString(), mUsername, null);
                 mMessagesDatabaseReference.push().setValue(friendlyMessage);
 
@@ -197,6 +211,7 @@ public class MainActivity extends AppCompatActivity {
         // available. Eg: if an error occurred fetching values from the server.
         Map<String, Object> defaultConfigMap = new HashMap<>();
         defaultConfigMap.put(FRIENDLY_MSG_LENGTH_KEY, DEFAULT_MSG_LENGTH_LIMIT);
+        defaultConfigMap.put(SOUND_ON_KEY, DEFAULT_SOUND_ON);
         mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
         fetchConfig();
     }
@@ -223,6 +238,9 @@ public class MainActivity extends AppCompatActivity {
             photoRef.putFile(selectedImageUri)
                     .addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            if (mSoundOn) {
+                                mSendMP.start();
+                            }
                             // When the image has successfully uploaded, we get its download URL
                             Uri downloadUrl = taskSnapshot.getDownloadUrl();
 
@@ -248,6 +266,19 @@ public class MainActivity extends AppCompatActivity {
         }
         mMessageAdapter.clear();
         detachDatabaseReadListener();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mSendMP != null) {
+            mSendMP.release();
+            mSendMP = null;
+        }
+        if (mReceiveMP != null) {
+            mReceiveMP.release();
+            mReceiveMP = null;
+        }
     }
 
     @Override
@@ -284,12 +315,18 @@ public class MainActivity extends AppCompatActivity {
             mChildEventListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    if (mSoundOn && !mSendMP.isPlaying()) {
+                        mReceiveMP.start();
+                    }
                     FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.add(friendlyMessage);
                 }
 
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    if (mSoundOn && !mSendMP.isPlaying()) {
+                        mReceiveMP.start();
+                    }
                     FriendlyMessage newMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     newMessage.setKey(dataSnapshot.getKey());
                     final int oldPosition = mMessageAdapter.getPosition(newMessage);
@@ -304,6 +341,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    if (mSoundOn && !mSendMP.isPlaying()) {
+                        mReceiveMP.start();
+                    }
                     FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.remove(friendlyMessage);
@@ -340,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
 
                         // Update the EditText length limit with
                         // the newly retrieved values from Remote Config.
-                        applyRetrievedLengthLimit();
+                        applyRetrievedConfig();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -351,7 +391,7 @@ public class MainActivity extends AppCompatActivity {
 
                         // Update the EditText length limit with
                         // the newly retrieved values from Remote Config.
-                        applyRetrievedLengthLimit();
+                        applyRetrievedConfig();
                     }
                 });
     }
@@ -360,8 +400,9 @@ public class MainActivity extends AppCompatActivity {
      * Apply retrieved length limit to edit text field. This result may be fresh from the server or it may be from
      * cached values.
      */
-    private void applyRetrievedLengthLimit() {
+    private void applyRetrievedConfig() {
         Long friendly_msg_length = mFirebaseRemoteConfig.getLong(FRIENDLY_MSG_LENGTH_KEY);
+        mSoundOn = mFirebaseRemoteConfig.getBoolean(SOUND_ON_KEY);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(friendly_msg_length.intValue())});
         Log.d(TAG, FRIENDLY_MSG_LENGTH_KEY + " = " + friendly_msg_length);
     }
