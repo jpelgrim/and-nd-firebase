@@ -164,9 +164,7 @@ public class MainActivity extends AppCompatActivity {
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (mSoundOn) {
-                    mSendMP.start();
-                }
+                playSendSound();
                 FriendlyMessage friendlyMessage = new FriendlyMessage(mMessageEditText.getText().toString(), mUsername, null);
                 mMessagesDatabaseReference.push().setValue(friendlyMessage);
 
@@ -238,9 +236,7 @@ public class MainActivity extends AppCompatActivity {
             photoRef.putFile(selectedImageUri)
                     .addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
                         public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                            if (mSoundOn) {
-                                mSendMP.start();
-                            }
+                            playSendSound();
                             // When the image has successfully uploaded, we get its download URL
                             Uri downloadUrl = taskSnapshot.getDownloadUrl();
 
@@ -315,18 +311,14 @@ public class MainActivity extends AppCompatActivity {
             mChildEventListener = new ChildEventListener() {
                 @Override
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                    if (mSoundOn && !mSendMP.isPlaying()) {
-                        mReceiveMP.start();
-                    }
+                    playReceiveSound();
                     FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.add(friendlyMessage);
                 }
 
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                    if (mSoundOn && !mSendMP.isPlaying()) {
-                        mReceiveMP.start();
-                    }
+                    playReceiveSound();
                     FriendlyMessage newMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     newMessage.setKey(dataSnapshot.getKey());
                     final int oldPosition = mMessageAdapter.getPosition(newMessage);
@@ -341,9 +333,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 public void onChildRemoved(DataSnapshot dataSnapshot) {
-                    if (mSoundOn && !mSendMP.isPlaying()) {
-                        mReceiveMP.start();
-                    }
+                    playReceiveSound();
                     FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.remove(friendlyMessage);
@@ -352,6 +342,18 @@ public class MainActivity extends AppCompatActivity {
                 public void onCancelled(DatabaseError databaseError) {}
             };
             mMessagesDatabaseReference.addChildEventListener(mChildEventListener);
+        }
+    }
+
+    private void playSendSound() {
+        if (mSoundOn) {
+            mSendMP.start();
+        }
+    }
+
+    private void playReceiveSound() {
+        if (mSoundOn && !mSendMP.isPlaying()) {
+            mReceiveMP.start();
         }
     }
 
