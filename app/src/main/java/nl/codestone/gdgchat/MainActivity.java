@@ -201,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
         // Enabling developer mode allows many more requests to be made per hour, so developers
         // can test different config values during development.
         FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder()
-                .setDeveloperModeEnabled(BuildConfig.DEBUG)
+                .setDeveloperModeEnabled(true)
                 .build();
         mFirebaseRemoteConfig.setConfigSettings(configSettings);
 
@@ -310,14 +310,14 @@ public class MainActivity extends AppCompatActivity {
         if (mChildEventListener == null) {
             mChildEventListener = new ChildEventListener() {
                 @Override
-                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                public void onChildAdded(DataSnapshot dataSnapshot, String previousChildName) {
                     playReceiveSound();
                     FriendlyMessage friendlyMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.add(friendlyMessage);
                 }
 
-                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                public void onChildChanged(DataSnapshot dataSnapshot, String previousChildName) {
                     playReceiveSound();
                     FriendlyMessage newMessage = dataSnapshot.getValue(FriendlyMessage.class);
                     newMessage.setKey(dataSnapshot.getKey());
@@ -338,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
                     friendlyMessage.setKey(dataSnapshot.getKey());
                     mMessageAdapter.remove(friendlyMessage);
                 }
-                public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
+                public void onChildMoved(DataSnapshot dataSnapshot, String previousChildName) {}
                 public void onCancelled(DatabaseError databaseError) {}
             };
             mMessagesDatabaseReference.addChildEventListener(mChildEventListener);
@@ -392,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.w(TAG, "Error fetching config", e);
 
                         // Update the EditText length limit with
-                        // the newly retrieved values from Remote Config.
+                        // the default values we defined before.
                         applyRetrievedConfig();
                     }
                 });
@@ -404,8 +404,11 @@ public class MainActivity extends AppCompatActivity {
      */
     private void applyRetrievedConfig() {
         Long friendly_msg_length = mFirebaseRemoteConfig.getLong(FRIENDLY_MSG_LENGTH_KEY);
-        mSoundOn = mFirebaseRemoteConfig.getBoolean(SOUND_ON_KEY);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(friendly_msg_length.intValue())});
         Log.d(TAG, FRIENDLY_MSG_LENGTH_KEY + " = " + friendly_msg_length);
+
+        mSoundOn = mFirebaseRemoteConfig.getBoolean(SOUND_ON_KEY);
+        Log.d(TAG, SOUND_ON_KEY + " = " + mSoundOn);
+
     }
 }
